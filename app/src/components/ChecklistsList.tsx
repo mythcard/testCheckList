@@ -123,14 +123,14 @@ export default function ChecklistsList({
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        <div className="animate-spin h-8 w-8 border-4 border-indigo-500 rounded-full border-t-transparent"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center p-8">
+      <div className="text-center p-8 rounded-lg bg-red-50 border border-red-100">
         <p className="text-red-500 mb-4">{error}</p>
         <Button onClick={() => window.location.reload()}>Retry</Button>
       </div>
@@ -139,26 +139,63 @@ export default function ChecklistsList({
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">My Checklists</h1>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">My Checklists</h1>
+          <p className="text-gray-500 mt-1">Manage and track your tasks</p>
+        </div>
         {onCreateChecklist && (
-          <Button onClick={() => setShowTemplateModal(true)}>
-            Create Checklist
+          <Button
+            onClick={() => setShowTemplateModal(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white focus:ring-indigo-500"
+          >
+            <span className="flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Create Checklist
+            </span>
           </Button>
         )}
       </div>
 
       {checklists.length === 0 ? (
-        <div className="text-center p-8 border rounded-lg bg-gray-50">
+        <div className="text-center p-10 border rounded-lg bg-white shadow-sm">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-12 w-12 mx-auto text-gray-400 mb-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.5}
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
+          </svg>
           <p className="text-gray-500 mb-4">No checklists available.</p>
           {onCreateChecklist && (
-            <Button onClick={() => setShowTemplateModal(true)}>
+            <Button
+              onClick={() => setShowTemplateModal(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
               Create Your First Checklist
             </Button>
           )}
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {checklists.map((checklist: Checklist) => {
             const templateName = checklist.template_id
               ? templates.find((t: Template) => t.id === checklist.template_id)
@@ -168,35 +205,49 @@ export default function ChecklistsList({
             return (
               <div
                 key={checklist.id}
-                className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
+                className="bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer group"
                 onClick={() => handleCardClick(checklist)}
               >
-                <h2 className="text-lg font-semibold mb-1">{checklist.name}</h2>
-                {templateName && (
-                  <div className="text-xs text-blue-600 mb-2">
-                    From template: {templateName}
+                <div className="p-5">
+                  <h2 className="text-lg font-semibold text-gray-800 mb-2 group-hover:text-indigo-600 transition">
+                    {checklist.name}
+                  </h2>
+
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {templateName && (
+                      <div className="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">
+                        From template: {templateName}
+                      </div>
+                    )}
+                    {checklist.type === "sequential" && (
+                      <div className="text-xs bg-emerald-50 px-2 py-1 rounded-full text-emerald-700">
+                        Sequential
+                      </div>
+                    )}
                   </div>
-                )}
-                {checklist.type === "sequential" && (
-                  <div className="text-xs bg-green-100 inline-block px-2 py-0.5 rounded text-green-800 mb-2">
-                    Sequential
+
+                  {checklist.description && (
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                      {checklist.description}
+                    </p>
+                  )}
+
+                  <div className="flex justify-between items-center">
+                    <div className="text-xs text-gray-500">
+                      {new Date(
+                        checklist.created_at || ""
+                      ).toLocaleDateString()}
+                    </div>
+                    <Button
+                      size="sm"
+                      className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                      onClick={(e: MouseEvent<HTMLButtonElement>) =>
+                        handleButtonClick(e, checklist)
+                      }
+                    >
+                      View Details
+                    </Button>
                   </div>
-                )}
-                {checklist.description && (
-                  <p className="text-gray-600 text-sm mb-3">
-                    {checklist.description}
-                  </p>
-                )}
-                <div className="flex justify-end">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e: MouseEvent<HTMLButtonElement>) =>
-                      handleButtonClick(e, checklist)
-                    }
-                  >
-                    View Details
-                  </Button>
                 </div>
               </div>
             );

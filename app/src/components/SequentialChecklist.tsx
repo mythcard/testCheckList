@@ -105,41 +105,88 @@ export default function SequentialChecklist({
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        <div className="animate-spin h-8 w-8 border-4 border-indigo-500 rounded-full border-t-transparent"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center p-8">
+      <div className="text-center p-8 bg-red-50 rounded-lg border border-red-100">
         <p className="text-red-500 mb-4">{error}</p>
-        {onBack && <Button onClick={onBack}>Go Back</Button>}
+        {onBack && (
+          <Button
+            onClick={onBack}
+            className="bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
+            Go Back
+          </Button>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+    <div className="bg-white rounded-lg shadow-sm p-6">
+      <div className="flex justify-between items-start mb-8 border-b pb-4">
         <div>
           {onBack && (
-            <Button variant="ghost" onClick={onBack} className="mb-2">
-              ← Back
+            <Button
+              variant="ghost"
+              onClick={onBack}
+              className="mb-3 text-indigo-600 hover:bg-indigo-50"
+            >
+              <span className="flex items-center">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-1"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                Back to Checklists
+              </span>
             </Button>
           )}
-          <h1 className="text-2xl font-bold">{checklist.name}</h1>
+          <h1 className="text-2xl font-bold text-gray-800">{checklist.name}</h1>
           {checklist.description && (
             <p className="text-gray-600 mt-1">{checklist.description}</p>
           )}
-          <p className="italic text-gray-500 mt-1">Type: Sequential</p>
+          <div className="mt-2 flex items-center">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                />
+              </svg>
+              Sequential
+            </span>
+            <span className="text-sm text-gray-500 ml-3">
+              Created:{" "}
+              {new Date(checklist.created_at || "").toLocaleDateString()}
+            </span>
+          </div>
         </div>
         <div className="text-right">
           <div className="text-sm text-gray-500 mb-1">Progress</div>
           <div className="flex items-center">
-            <div className="w-32 bg-gray-200 rounded-full h-2.5 mr-2">
+            <div className="w-36 bg-gray-200 rounded-full h-2.5 mr-2">
               <div
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                className="bg-indigo-600 h-2.5 rounded-full transition-all duration-300"
                 style={{ width: `${getProgress()}%` }}
               ></div>
             </div>
@@ -149,20 +196,67 @@ export default function SequentialChecklist({
       </div>
 
       <div className="mt-6">
-        <h2 className="text-xl font-semibold mb-3">Tasks (Sequential)</h2>
+        <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 mr-2 text-indigo-500"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z" />
+          </svg>
+          Sequential Tasks
+        </h2>
+
+        <div className="mb-3 p-3 bg-indigo-50 text-indigo-700 rounded-md text-sm flex items-start">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span>
+            Tasks must be completed in sequence. You must complete each task
+            before moving to the next one.
+          </span>
+        </div>
 
         {tasks.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">No tasks available.</p>
+          <div className="text-center p-10 border border-dashed rounded-lg bg-gray-50">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-10 w-10 mx-auto text-gray-400 mb-3"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+              />
+            </svg>
+            <p className="text-gray-500 mb-1">No tasks available.</p>
+          </div>
         ) : (
           <ul className="space-y-3">
             {tasks.map((task, idx) => (
               <li
                 key={task.id}
                 className={`p-4 border rounded-lg flex items-center justify-between transition-all duration-300 ${
-                  task.is_completed ? "bg-green-50" : "bg-white"
+                  task.is_completed
+                    ? "bg-green-50 border-green-100"
+                    : "bg-white"
                 } ${
                   !task.is_completed && idx > 0 && !tasks[idx - 1].is_completed
-                    ? "opacity-75 bg-gray-50"
+                    ? "opacity-75 bg-gray-50 border-gray-200"
                     : ""
                 }`}
               >
@@ -196,11 +290,28 @@ export default function SequentialChecklist({
                         {task.description}
                       </p>
                     )}
+                    {idx > 0 && !tasks[idx - 1].is_completed && (
+                      <div className="text-xs text-amber-600 mt-1 flex items-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-3 w-3 mr-1"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Complete previous tasks first
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center">
                   {taskInProgress === task.id && (
-                    <div className="mr-2 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="mr-2 w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                   )}
                   <Button
                     size="sm"
@@ -211,6 +322,11 @@ export default function SequentialChecklist({
                       taskInProgress !== null ||
                       (idx > 0 &&
                         !tasks.slice(0, idx).every((t) => t.is_completed))
+                    }
+                    className={
+                      task.is_completed
+                        ? "border-red-300 text-red-700 hover:bg-red-50"
+                        : "bg-indigo-600 hover:bg-indigo-700 text-white"
                     }
                   >
                     {task.is_completed ? "Undo" : "Complete"}

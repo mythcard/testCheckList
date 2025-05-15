@@ -69,11 +69,22 @@ export default function AddTaskForm({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="p-4 border rounded-lg bg-gray-50 mb-4"
-    >
-      <h3 className="font-medium text-gray-900 mb-2">Add New Task</h3>
+    <form onSubmit={handleSubmit} className="rounded-lg">
+      <h3 className="font-medium text-gray-800 mb-3 flex items-center">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5 mr-2 text-indigo-500"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+            clipRule="evenodd"
+          />
+        </svg>
+        Add New Task
+      </h3>
 
       {error && (
         <div className="mb-3 p-2 bg-red-50 text-red-700 text-sm rounded">
@@ -81,31 +92,52 @@ export default function AddTaskForm({
         </div>
       )}
 
-      <div className="mb-3">
-        <Input
-          placeholder="Task title"
-          value={title}
-          onChange={handleTitleChange}
-          disabled={isLoading}
-          required
-          className="w-full"
-        />
-      </div>
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex-1">
+          <Input
+            placeholder="Task title"
+            value={title}
+            onChange={handleTitleChange}
+            disabled={isLoading}
+            required
+            className="w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+          />
+        </div>
 
-      <div className="mb-3">
-        <Input
-          placeholder="Description (optional)"
-          value={description}
-          onChange={handleDescriptionChange}
-          disabled={isLoading}
-          className="w-full"
-        />
-      </div>
+        <div className="flex-1">
+          <Input
+            placeholder="Description (optional)"
+            value={description}
+            onChange={handleDescriptionChange}
+            disabled={isLoading}
+            className="w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+          />
+        </div>
 
-      <div className="flex justify-end">
-        <Button type="submit" disabled={isLoading} loading={isLoading}>
-          Add Task
-        </Button>
+        <div className="flex-shrink-0">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            loading={isLoading}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white w-full md:w-auto"
+          >
+            <span className="flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Add Task
+            </span>
+          </Button>
+        </div>
       </div>
     </form>
   );
