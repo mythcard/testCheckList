@@ -74,7 +74,11 @@ export default function SequentialChecklist({
 
       setTimeout(() => {
         setTasks((prevTasks) =>
-          prevTasks.map((task) => (task.id === taskId ? updatedTask : task))
+          prevTasks.map((task) =>
+            task.id === taskId
+              ? { ...task, is_completed: updatedTask.is_completed }
+              : task
+          )
         );
         setTaskInProgress(null);
       }, remainingTime);

@@ -35,11 +35,13 @@ export default function ChecklistItem({
       // Apply minimum loading time of 1 second
       const startTime = Date.now();
 
+      console.log("localTask", localTask);
       // Make the API call
       const updatedTask = await apiClient.toggleTaskComplete(
         localTask.id,
         newStatus
       );
+      console.log("updatedTask", updatedTask);
 
       // Calculate how much time has passed
       const elapsedTime = Date.now() - startTime;
@@ -47,7 +49,10 @@ export default function ChecklistItem({
 
       // Set a timeout for the minimum loading time
       setTimeout(() => {
-        setLocalTask(updatedTask);
+        setLocalTask((prevTask) => ({
+          ...prevTask,
+          is_completed: updatedTask.is_completed,
+        }));
 
         if (onStatusChange) {
           onStatusChange(updatedTask);
