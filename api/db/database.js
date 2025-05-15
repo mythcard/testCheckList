@@ -32,6 +32,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
           template_id INTEGER,
           name TEXT NOT NULL,
           description TEXT,
+          type TEXT DEFAULT 'normal',
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (template_id) REFERENCES templates (id)

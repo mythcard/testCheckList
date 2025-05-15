@@ -37,10 +37,16 @@ class Checklist {
 
   static create(checklist) {
     return new Promise((resolve, reject) => {
-      const { user_id, template_id, name, description } = checklist;
+      const {
+        user_id,
+        template_id,
+        name,
+        description,
+        type = "normal",
+      } = checklist;
       db.run(
-        "INSERT INTO checklists (user_id, template_id, name, description) VALUES (?, ?, ?, ?)",
-        [user_id, template_id, name, description],
+        "INSERT INTO checklists (user_id, template_id, name, description, type) VALUES (?, ?, ?, ?, ?)",
+        [user_id, template_id, name, description, type],
         function (err) {
           if (err) {
             reject(err);
@@ -51,6 +57,7 @@ class Checklist {
               template_id,
               name,
               description,
+              type,
             });
           }
         }
@@ -60,18 +67,27 @@ class Checklist {
 
   static update(id, checklist) {
     return new Promise((resolve, reject) => {
-      const { name, description } = checklist;
-      db.run(
-        "UPDATE checklists SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-        [name, description, id],
-        function (err) {
-          if (err) {
-            reject(err);
-          } else {
-            resolve({ id, changes: this.changes });
-          }
+      const { name, description, type } = checklist;
+
+      // If type is provided, update it, otherwise just update name and description
+      let query, params;
+      if (type !== undefined) {
+        query =
+          "UPDATE checklists SET name = ?, description = ?, type = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        params = [name, description, type, id];
+      } else {
+        query =
+          "UPDATE checklists SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+        params = [name, description, id];
+      }
+
+      db.run(query, params, function (err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ id, changes: this.changes });
         }
-      );
+      });
     });
   }
 
@@ -92,6 +108,22 @@ class Checklist {
       db.all(
         "SELECT * FROM checklists WHERE template_id = ?",
         [templateId],
+        (err, rows) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        }
+      );
+    });
+  }
+
+  static getByType(type) {
+    return new Promise((resolve, reject) => {
+      db.all(
+        "SELECT * FROM checklists WHERE type = ? ORDER BY created_at DESC",
+        [type],
         (err, rows) => {
           if (err) {
             reject(err);

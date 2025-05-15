@@ -8,7 +8,21 @@ const Template = require("../../models/Template");
 router.get("/", async (req, res) => {
   try {
     const userId = req.query.userId;
-    const checklists = await Checklist.getAll(userId);
+    const type = req.query.type;
+
+    let checklists;
+    if (type) {
+      checklists = await Checklist.getByType(type);
+      // Filter by user if needed
+      if (userId) {
+        checklists = checklists.filter(
+          (checklist) => checklist.user_id === userId
+        );
+      }
+    } else {
+      checklists = await Checklist.getAll(userId);
+    }
+
     res.json(checklists);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -37,7 +51,7 @@ router.get("/:id", async (req, res) => {
 // Create new checklist
 router.post("/", async (req, res) => {
   try {
-    const { user_id, template_id, name, description, tasks } = req.body;
+    const { user_id, template_id, name, description, tasks, type } = req.body;
 
     if (!name) {
       return res.status(400).json({ error: "Checklist name is required" });
@@ -49,6 +63,7 @@ router.post("/", async (req, res) => {
       template_id,
       name,
       description: description || "",
+      type: type || "normal",
     });
 
     // If tasks are provided, create them
@@ -84,7 +99,7 @@ router.post("/", async (req, res) => {
 // Update checklist
 router.put("/:id", async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, type } = req.body;
 
     if (!name) {
       return res.status(400).json({ error: "Checklist name is required" });
@@ -95,11 +110,16 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ error: "Checklist not found" });
     }
 
-    const result = await Checklist.update(req.params.id, { name, description });
+    const result = await Checklist.update(req.params.id, {
+      name,
+      description,
+      type,
+    });
     res.json({
       id: req.params.id,
       name,
       description,
+      type: type || checklist.type,
       updated: result.changes > 0,
     });
   } catch (err) {
@@ -125,7 +145,7 @@ router.delete("/:id", async (req, res) => {
 // Create checklist from template
 router.post("/from-template/:templateId", async (req, res) => {
   try {
-    const { user_id, name } = req.body;
+    const { user_id, name, type } = req.body;
     const templateId = req.params.templateId;
 
     if (!name) {
@@ -144,6 +164,7 @@ router.post("/from-template/:templateId", async (req, res) => {
       template_id: templateId,
       name,
       description: req.body.description || template.description || "",
+      type: type || "normal",
     });
 
     // TODO: Copy tasks from template to checklist

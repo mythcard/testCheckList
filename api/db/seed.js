@@ -4,11 +4,15 @@ const db = require("./database");
 const seedDatabase = () => {
   console.log("Seeding database with sample data...");
 
-  // Create tables if they don't exist
+  // Drop tables if they exist
   db.serialize(() => {
-    // Templates table
+    db.run("DROP TABLE IF EXISTS tasks");
+    db.run("DROP TABLE IF EXISTS checklists");
+    db.run("DROP TABLE IF EXISTS templates");
+
+    // Create tables fresh
     db.run(`
-      CREATE TABLE IF NOT EXISTS templates (
+      CREATE TABLE templates (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         description TEXT,
@@ -17,23 +21,22 @@ const seedDatabase = () => {
       )
     `);
 
-    // Checklists table
     db.run(`
-      CREATE TABLE IF NOT EXISTS checklists (
+      CREATE TABLE checklists (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id TEXT,
         template_id INTEGER,
         name TEXT NOT NULL,
         description TEXT,
+        type TEXT DEFAULT 'normal',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (template_id) REFERENCES templates (id)
       )
     `);
 
-    // Tasks table
     db.run(`
-      CREATE TABLE IF NOT EXISTS tasks (
+      CREATE TABLE tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         checklist_id INTEGER,
         title TEXT NOT NULL,
@@ -45,16 +48,6 @@ const seedDatabase = () => {
         FOREIGN KEY (checklist_id) REFERENCES checklists (id) ON DELETE CASCADE
       )
     `);
-
-    // Clear existing data
-    db.run("DELETE FROM tasks");
-    db.run("DELETE FROM checklists");
-    db.run("DELETE FROM templates");
-
-    // Reset auto-increment counters
-    db.run("DELETE FROM sqlite_sequence WHERE name='tasks'");
-    db.run("DELETE FROM sqlite_sequence WHERE name='checklists'");
-    db.run("DELETE FROM sqlite_sequence WHERE name='templates'");
 
     // Seed templates
     const templateStmt = db.prepare(
@@ -73,6 +66,10 @@ const seedDatabase = () => {
       {
         name: "Bug Report",
         description: "Standard bug report process",
+      },
+      {
+        name: "Deployment Checklist",
+        description: "Sequential checklist for deployment process",
       },
     ];
 
@@ -93,14 +90,15 @@ const seedDatabase = () => {
         templateIds[row.name] = row.id;
       });
 
-      // Seed a sample checklist
+      // Seed normal checklist
       db.run(
-        "INSERT INTO checklists (user_id, template_id, name, description) VALUES (?, ?, ?, ?)",
+        "INSERT INTO checklists (user_id, template_id, name, description, type) VALUES (?, ?, ?, ?, ?)",
         [
           "user1",
           templateIds["Project Kickoff"],
           "New Project Alpha",
           "Kickoff checklist for Project Alpha",
+          "normal",
         ],
         function (err) {
           if (err) {
@@ -110,7 +108,7 @@ const seedDatabase = () => {
 
           const checklistId = this.lastID;
 
-          // Seed tasks for the checklist
+          // Seed tasks for the normal checklist
           const taskStmt = db.prepare(
             "INSERT INTO tasks (checklist_id, title, description, is_completed, position) VALUES (?, ?, ?, ?, ?)"
           );
@@ -153,7 +151,80 @@ const seedDatabase = () => {
           });
 
           taskStmt.finalize();
-          console.log("Database seeded successfully");
+
+          // Seed sequential checklist
+          db.run(
+            "INSERT INTO checklists (user_id, template_id, name, description, type) VALUES (?, ?, ?, ?, ?)",
+            [
+              "user1",
+              templateIds["Deployment Checklist"],
+              "Application Deployment",
+              "Sequential checklist for deploying our application",
+              "sequential",
+            ],
+            function (err) {
+              if (err) {
+                console.error(
+                  "Error creating sequential checklist:",
+                  err.message
+                );
+                return;
+              }
+
+              const seqChecklistId = this.lastID;
+
+              // Seed tasks for the sequential checklist
+              const seqTaskStmt = db.prepare(
+                "INSERT INTO tasks (checklist_id, title, description, is_completed, position) VALUES (?, ?, ?, ?, ?)"
+              );
+
+              const seqTasks = [
+                {
+                  title: "Initialize repository",
+                  description: "Setup Git repository for deployment",
+                  is_completed: 0,
+                  position: 0,
+                },
+                {
+                  title: "Configure CI/CD pipeline",
+                  description: "Set up continuous integration and deployment",
+                  is_completed: 0,
+                  position: 1,
+                },
+                {
+                  title: "Deploy to staging environment",
+                  description: "Deploy application to the staging server",
+                  is_completed: 0,
+                  position: 2,
+                },
+                {
+                  title: "Run smoke tests",
+                  description: "Verify basic functionality in staging",
+                  is_completed: 0,
+                  position: 3,
+                },
+                {
+                  title: "Deploy to production",
+                  description: "Deploy to production environment",
+                  is_completed: 0,
+                  position: 4,
+                },
+              ];
+
+              seqTasks.forEach((task) => {
+                seqTaskStmt.run([
+                  seqChecklistId,
+                  task.title,
+                  task.description,
+                  task.is_completed,
+                  task.position,
+                ]);
+              });
+
+              seqTaskStmt.finalize();
+              console.log("Database seeded successfully");
+            }
+          );
         }
       );
     });
