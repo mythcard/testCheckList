@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button, Switch } from "@heroui/react";
 import { Task, Checklist } from "@/api";
 import apiClient from "@/api";
+import AddTaskForm from "./AddTaskForm";
 
 interface SequentialChecklistProps {
   checklist: Checklist;
@@ -102,6 +103,14 @@ export default function SequentialChecklist({
     return Math.round((completedTasks / tasks.length) * 100);
   };
 
+  const handleTaskAdded = (newTask: Task) => {
+    // Add the new task with the next position
+    const position =
+      tasks.length > 0 ? Math.max(...tasks.map((t) => t.position || 0)) + 1 : 0;
+    const taskWithPosition = { ...newTask, position };
+    setTasks([...tasks, taskWithPosition]);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -193,6 +202,10 @@ export default function SequentialChecklist({
             <span className="text-sm font-medium">{getProgress()}%</span>
           </div>
         </div>
+      </div>
+
+      <div className="bg-gray-50 p-4 rounded-lg mb-6">
+        <AddTaskForm checklistId={checklist.id} onTaskAdded={handleTaskAdded} />
       </div>
 
       <div className="mt-6">
