@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Switch, Button } from "@heroui/react";
 import { Task } from "@/api";
 import apiClient from "@/api";
@@ -16,25 +16,48 @@ export default function ChecklistItem({
 }: ChecklistItemProps) {
   const [isCompleted, setIsCompleted] = useState(task.is_completed);
   const [isLoading, setIsLoading] = useState(false);
+  const [localTask, setLocalTask] = useState<Task>(task);
+
+  // Update local state when task prop changes
+  useEffect(() => {
+    setLocalTask(task);
+    setIsCompleted(task.is_completed);
+  }, [task]);
 
   const handleToggle = async () => {
     try {
       setIsLoading(true);
       const newStatus = !isCompleted;
+
+      // Optimistically update UI
       setIsCompleted(newStatus);
 
+      // Apply minimum loading time of 1 second
+      const startTime = Date.now();
+
+      // Make the API call
       const updatedTask = await apiClient.toggleTaskComplete(
-        task.id,
+        localTask.id,
         newStatus
       );
 
-      if (onStatusChange) {
-        onStatusChange(updatedTask);
-      }
+      // Calculate how much time has passed
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 1000 - elapsedTime);
+
+      // Set a timeout for the minimum loading time
+      setTimeout(() => {
+        setLocalTask(updatedTask);
+
+        if (onStatusChange) {
+          onStatusChange(updatedTask);
+        }
+        setIsLoading(false);
+      }, remainingTime);
     } catch (error) {
       console.error("Failed to toggle task status:", error);
-      setIsCompleted(isCompleted); // Revert on error
-    } finally {
+      // Revert UI on error
+      setIsCompleted(localTask.is_completed);
       setIsLoading(false);
     }
   };
@@ -46,21 +69,33 @@ export default function ChecklistItem({
 
     try {
       setIsLoading(true);
-      await apiClient.deleteTask(task.id);
 
-      if (onDelete) {
-        onDelete(task.id);
-      }
+      // Apply minimum loading time of 1 second
+      const startTime = Date.now();
+
+      await apiClient.deleteTask(localTask.id);
+
+      // Calculate remaining time for minimum 1s loading
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 1000 - elapsedTime);
+
+      setTimeout(() => {
+        if (onDelete) {
+          onDelete(localTask.id);
+        }
+        setIsLoading(false);
+      }, remainingTime);
     } catch (error) {
       console.error("Failed to delete task:", error);
-    } finally {
       setIsLoading(false);
     }
   };
 
   return (
     <div
-      className={`p-4 border rounded-lg mb-2 ${isCompleted ? "bg-gray-50" : "bg-white"}`}
+      className={`p-4 border rounded-lg mb-2 transition-colors duration-300 ${
+        isCompleted ? "bg-gray-50" : "bg-white"
+      }`}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3 flex-1">
@@ -72,28 +107,37 @@ export default function ChecklistItem({
           />
           <div className="flex-1">
             <h3
-              className={`font-medium ${isCompleted ? "text-gray-500 line-through" : "text-gray-900"}`}
+              className={`font-medium transition-all duration-300 ${
+                isCompleted ? "text-gray-600 line-through" : "text-gray-900"
+              }`}
             >
-              {task.title}
+              {localTask.title}
             </h3>
-            {task.description && (
+            {localTask.description && (
               <p
-                className={`text-sm ${isCompleted ? "text-gray-400" : "text-gray-700"}`}
+                className={`text-sm transition-all duration-300 ${
+                  isCompleted ? "text-gray-500" : "text-gray-700"
+                }`}
               >
-                {task.description}
+                {localTask.description}
               </p>
             )}
           </div>
         </div>
-        <Button
-          size="sm"
-          color="danger"
-          variant="ghost"
-          onClick={handleDelete}
-          disabled={isLoading}
-        >
-          Delete
-        </Button>
+        <div className="flex items-center">
+          {isLoading && (
+            <div className="mr-3 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          )}
+          <Button
+            size="sm"
+            color="danger"
+            variant="ghost"
+            onClick={handleDelete}
+            disabled={isLoading}
+          >
+            Delete
+          </Button>
+        </div>
       </div>
     </div>
   );

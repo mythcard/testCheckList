@@ -60,7 +60,7 @@ router.post("/", async (req, res) => {
     // Create checklist
     const checklist = await Checklist.create({
       user_id,
-      template_id,
+      template_id: template_id || null,
       name,
       description: description || "",
       type: type || "normal",
@@ -79,8 +79,19 @@ router.post("/", async (req, res) => {
     }
     // If template_id is provided but no tasks, copy tasks from template
     else if (template_id) {
-      // Create tasks from template (implementation needed)
-      // This would require additional logic to fetch template tasks
+      // Get template tasks
+      const template = await Template.getWithTasks(template_id);
+      if (template && template.tasks && template.tasks.length > 0) {
+        const taskObjects = template.tasks.map((templateTask) => ({
+          checklist_id: checklist.id,
+          title: templateTask.title,
+          description: templateTask.description || "",
+          position: templateTask.position,
+          is_completed: false,
+        }));
+
+        await Task.createMultiple(taskObjects);
+      }
     }
 
     // Get the created checklist with tasks
@@ -152,8 +163,8 @@ router.post("/from-template/:templateId", async (req, res) => {
       return res.status(400).json({ error: "Checklist name is required" });
     }
 
-    // Get template to ensure it exists
-    const template = await Template.getById(templateId);
+    // Get template to ensure it exists with tasks
+    const template = await Template.getWithTasks(templateId);
     if (!template) {
       return res.status(404).json({ error: "Template not found" });
     }
@@ -167,10 +178,27 @@ router.post("/from-template/:templateId", async (req, res) => {
       type: type || "normal",
     });
 
-    // TODO: Copy tasks from template to checklist
-    // This would require additional implementation to get template tasks
+    // Copy tasks from template to checklist if there are template tasks
+    if (template.tasks && template.tasks.length > 0) {
+      const taskObjects = template.tasks.map((templateTask) => ({
+        checklist_id: checklist.id,
+        title: templateTask.title,
+        description: templateTask.description || "",
+        position: templateTask.position,
+        is_completed: false,
+      }));
 
-    res.status(201).json(checklist);
+      await Task.createMultiple(taskObjects);
+    }
+
+    // Get the created checklist with tasks
+    const result = await Checklist.getById(checklist.id);
+    const checklistTasks = await Task.getByChecklistId(checklist.id);
+
+    res.status(201).json({
+      ...result,
+      tasks: checklistTasks,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -16,7 +16,7 @@ router.get("/", async (req, res) => {
 // Get template by ID
 router.get("/:id", async (req, res) => {
   try {
-    const template = await Template.getById(req.params.id);
+    const template = await Template.getWithTasks(req.params.id);
     if (!template) {
       return res.status(404).json({ error: "Template not found" });
     }
@@ -36,6 +36,7 @@ router.post("/", async (req, res) => {
     const template = await Template.create({
       name: req.body.name,
       description: req.body.description || "",
+      tasks: req.body.tasks || [],
     });
 
     res.status(201).json(template);
@@ -79,6 +80,81 @@ router.delete("/:id", async (req, res) => {
 
     const result = await Template.delete(req.params.id);
     res.json({ id: req.params.id, deleted: result.changes > 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get template tasks
+router.get("/:id/tasks", async (req, res) => {
+  try {
+    const tasks = await Template.getTemplateTasks(req.params.id);
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add task to template
+router.post("/:id/tasks", async (req, res) => {
+  try {
+    const { title, description } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ error: "Task title is required" });
+    }
+
+    const template = await Template.getById(req.params.id);
+    if (!template) {
+      return res.status(404).json({ error: "Template not found" });
+    }
+
+    const task = await Template.addTemplateTask(req.params.id, {
+      title,
+      description: description || "",
+    });
+
+    res.status(201).json(task);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update template task
+router.put("/:templateId/tasks/:taskId", async (req, res) => {
+  try {
+    const { title, description, position } = req.body;
+
+    if (!title) {
+      return res.status(400).json({ error: "Task title is required" });
+    }
+
+    const result = await Template.updateTemplateTask(req.params.taskId, {
+      title,
+      description,
+      position,
+    });
+
+    res.json({
+      id: parseInt(req.params.taskId),
+      title,
+      description,
+      position,
+      updated: result.changes > 0,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete template task
+router.delete("/:templateId/tasks/:taskId", async (req, res) => {
+  try {
+    const result = await Template.deleteTemplateTask(req.params.taskId);
+    res.json({
+      id: parseInt(req.params.taskId),
+      deleted: result.changes > 0,
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

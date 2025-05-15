@@ -48,19 +48,32 @@ export default function ChecklistsList({
     fetchData();
   }, [userId]);
 
-  const handleCreateFromTemplate = async () => {
+  const handleCreateChecklist = async () => {
     if (!newChecklistName.trim()) {
       return;
     }
 
     try {
       setIsLoading(true);
-      const newChecklist = await apiClient.createChecklistFromTemplate(
-        selectedTemplateId || 0,
-        newChecklistName.trim(),
-        userId,
-        selectedType
-      );
+      let newChecklist;
+
+      // If a template ID is selected, create from template
+      if (selectedTemplateId) {
+        newChecklist = await apiClient.createChecklistFromTemplate(
+          selectedTemplateId,
+          newChecklistName.trim(),
+          userId,
+          selectedType
+        );
+      } else {
+        // Create a regular checklist if no template is selected
+        newChecklist = await apiClient.createChecklist({
+          name: newChecklistName.trim(),
+          description: "",
+          user_id: userId,
+          type: selectedType,
+        });
+      }
 
       setChecklists((prev: Checklist[]) => [...prev, newChecklist]);
       setShowTemplateModal(false);
@@ -191,11 +204,15 @@ export default function ChecklistsList({
         </div>
       )}
 
-      {/* This would typically be a modal component, but we're keeping it simple */}
+      {/* Modal for creating new checklist */}
       {showTemplateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold mb-4">Create New Checklist</h2>
+            <p className="text-gray-600 mb-4 text-sm">
+              Fill in the details below. You can create a checklist with or
+              without a template.
+            </p>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -222,6 +239,9 @@ export default function ChecklistsList({
                 <option value="normal">Normal</option>
                 <option value="sequential">Sequential (enforced order)</option>
               </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Sequential checklists enforce the order of task completion.
+              </p>
             </div>
 
             <div className="mb-6">
@@ -233,13 +253,19 @@ export default function ChecklistsList({
                 value={selectedTemplateId || ""}
                 onChange={handleTemplateChange}
               >
-                <option value="">No template</option>
+                <option value="">
+                  No template - Start with empty checklist
+                </option>
                 {templates.map((template: Template) => (
                   <option key={template.id} value={template.id}>
                     {template.name}
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Templates provide predefined tasks. You can add more tasks
+                later.
+              </p>
             </div>
 
             <div className="flex justify-end space-x-2">
@@ -251,7 +277,7 @@ export default function ChecklistsList({
                 Cancel
               </Button>
               <Button
-                onClick={handleCreateFromTemplate}
+                onClick={handleCreateChecklist}
                 disabled={isLoading || !newChecklistName.trim()}
                 loading={isLoading}
               >

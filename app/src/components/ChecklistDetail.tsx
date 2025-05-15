@@ -38,11 +38,14 @@ export default function ChecklistDetail({
   }, [checklistId]);
 
   const handleTaskStatusChange = (updatedTask: Task) => {
-    setTasks((prevTasks: Task[]) =>
-      prevTasks.map((task: Task) =>
-        task.id === updatedTask.id ? updatedTask : task
-      )
-    );
+    setTasks((prevTasks: Task[]) => {
+      const newTasks = [...prevTasks];
+      const index = newTasks.findIndex((task) => task.id === updatedTask.id);
+      if (index !== -1) {
+        newTasks[index] = updatedTask;
+      }
+      return newTasks;
+    });
   };
 
   const handleTaskDelete = (taskId: number) => {
@@ -99,7 +102,7 @@ export default function ChecklistDetail({
           <div className="flex items-center">
             <div className="w-32 bg-gray-200 rounded-full h-2.5 mr-2">
               <div
-                className="bg-blue-600 h-2.5 rounded-full"
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
                 style={{ width: `${getProgress()}%` }}
               ></div>
             </div>
@@ -118,7 +121,7 @@ export default function ChecklistDetail({
             No tasks yet. Add your first task above.
           </p>
         ) : (
-          <div>
+          <div className="space-y-2">
             {tasks.map((task: Task) => (
               <ChecklistItem
                 key={task.id}

@@ -28,6 +28,9 @@ export default function AddTaskForm({
     setError("");
     setIsLoading(true);
 
+    // Start timing for minimum 1s loading
+    const startTime = Date.now();
+
     try {
       const newTask = await apiClient.createTask({
         checklist_id: checklistId,
@@ -35,17 +38,24 @@ export default function AddTaskForm({
         description: description.trim(),
       });
 
-      if (onTaskAdded) {
-        onTaskAdded(newTask);
-      }
+      // Calculate remaining time for minimum 1s loading
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 1000 - elapsedTime);
 
-      // Reset form
-      setTitle("");
-      setDescription("");
+      // Delay completion by remaining time
+      setTimeout(() => {
+        if (onTaskAdded) {
+          onTaskAdded(newTask);
+        }
+
+        // Reset form
+        setTitle("");
+        setDescription("");
+        setIsLoading(false);
+      }, remainingTime);
     } catch (error) {
       console.error("Failed to add task:", error);
       setError("Failed to add task. Please try again.");
-    } finally {
       setIsLoading(false);
     }
   };

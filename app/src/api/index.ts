@@ -2,10 +2,21 @@
 const API_URL = "http://localhost:3001/api";
 
 // Types
+export interface TemplateTask {
+  id?: number;
+  template_id?: number;
+  title: string;
+  description?: string;
+  position?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Template {
   id: number;
   name: string;
   description: string;
+  tasks?: TemplateTask[];
   created_at?: string;
   updated_at?: string;
 }
@@ -89,6 +100,65 @@ class ApiClient {
     });
     if (!response.ok) {
       throw new Error(`Failed to delete template ${id}`);
+    }
+  }
+
+  // Template Tasks
+  async getTemplateTasks(templateId: number): Promise<TemplateTask[]> {
+    const response = await fetch(`${API_URL}/templates/${templateId}/tasks`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch tasks for template ${templateId}`);
+    }
+    return response.json();
+  }
+
+  async addTemplateTask(
+    templateId: number,
+    task: Partial<TemplateTask>
+  ): Promise<TemplateTask> {
+    const response = await fetch(`${API_URL}/templates/${templateId}/tasks`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(task),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to add task to template ${templateId}`);
+    }
+    return response.json();
+  }
+
+  async updateTemplateTask(
+    templateId: number,
+    taskId: number,
+    task: Partial<TemplateTask>
+  ): Promise<TemplateTask> {
+    const response = await fetch(
+      `${API_URL}/templates/${templateId}/tasks/${taskId}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(task),
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to update template task ${taskId}`);
+    }
+    return response.json();
+  }
+
+  async deleteTemplateTask(templateId: number, taskId: number): Promise<void> {
+    const response = await fetch(
+      `${API_URL}/templates/${templateId}/tasks/${taskId}`,
+      {
+        method: "DELETE",
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to delete template task ${taskId}`);
     }
   }
 

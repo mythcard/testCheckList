@@ -24,6 +24,20 @@ const db = new sqlite3.Database(dbPath, (err) => {
         )
       `);
 
+      // Template Tasks table
+      db.run(`
+        CREATE TABLE IF NOT EXISTS template_tasks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          template_id INTEGER,
+          title TEXT NOT NULL,
+          description TEXT,
+          position INTEGER,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (template_id) REFERENCES templates (id) ON DELETE CASCADE
+        )
+      `);
+
       // Checklists table
       db.run(`
         CREATE TABLE IF NOT EXISTS checklists (

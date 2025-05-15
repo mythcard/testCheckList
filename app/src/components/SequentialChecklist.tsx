@@ -15,6 +15,7 @@ export default function SequentialChecklist({
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [taskInProgress, setTaskInProgress] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -49,21 +50,45 @@ export default function SequentialChecklist({
     }
 
     try {
-      setIsLoading(true);
+      setTaskInProgress(taskId);
       const task = tasks.find((task) => task.id === taskId);
       if (!task) return;
 
       const newStatus = !task.is_completed;
+
+      // Optimistically update UI
+      const updatedTasks = tasks.map((t) =>
+        t.id === taskId ? { ...t, is_completed: newStatus } : t
+      );
+      setTasks(updatedTasks);
+
+      // Apply minimum loading time of 1 second
+      const startTime = Date.now();
+
+      // Make the API call
       const updatedTask = await apiClient.toggleTaskComplete(taskId, newStatus);
 
-      setTasks((prevTasks) =>
-        prevTasks.map((task) => (task.id === taskId ? updatedTask : task))
-      );
+      // Calculate remaining time for minimum 1s loading
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, 1000 - elapsedTime);
+
+      setTimeout(() => {
+        setTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === taskId ? updatedTask : task))
+        );
+        setTaskInProgress(null);
+      }, remainingTime);
     } catch (error) {
       console.error("Failed to update task status:", error);
       setError("Failed to update task. Please try again.");
-    } finally {
-      setIsLoading(false);
+      // Revert optimistic update
+      const originalTask = tasks.find((task) => task.id === taskId);
+      if (originalTask) {
+        setTasks((prevTasks) =>
+          prevTasks.map((task) => (task.id === taskId ? originalTask : task))
+        );
+      }
+      setTaskInProgress(null);
     }
   };
 
@@ -110,7 +135,7 @@ export default function SequentialChecklist({
           <div className="flex items-center">
             <div className="w-32 bg-gray-200 rounded-full h-2.5 mr-2">
               <div
-                className="bg-blue-600 h-2.5 rounded-full"
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
                 style={{ width: `${getProgress()}%` }}
               ></div>
             </div>
@@ -129,11 +154,11 @@ export default function SequentialChecklist({
             {tasks.map((task, idx) => (
               <li
                 key={task.id}
-                className={`p-4 border rounded-lg flex items-center justify-between ${
+                className={`p-4 border rounded-lg flex items-center justify-between transition-all duration-300 ${
                   task.is_completed ? "bg-green-50" : "bg-white"
                 } ${
                   !task.is_completed && idx > 0 && !tasks[idx - 1].is_completed
-                    ? "opacity-60"
+                    ? "opacity-75 bg-gray-50"
                     : ""
                 }`}
               >
@@ -142,7 +167,7 @@ export default function SequentialChecklist({
                     checked={task.is_completed}
                     onChange={() => handleToggleTask(task.id, idx)}
                     disabled={
-                      isLoading ||
+                      taskInProgress !== null ||
                       (idx > 0 &&
                         !tasks.slice(0, idx).every((t) => t.is_completed))
                     }
@@ -150,9 +175,9 @@ export default function SequentialChecklist({
                   />
                   <div className="flex-1">
                     <h3
-                      className={`font-medium ${
+                      className={`font-medium transition-all duration-300 ${
                         task.is_completed
-                          ? "text-gray-500 line-through"
+                          ? "text-gray-600 line-through"
                           : "text-gray-900"
                       }`}
                     >
@@ -160,8 +185,8 @@ export default function SequentialChecklist({
                     </h3>
                     {task.description && (
                       <p
-                        className={`text-sm ${
-                          task.is_completed ? "text-gray-400" : "text-gray-700"
+                        className={`text-sm transition-all duration-300 ${
+                          task.is_completed ? "text-gray-500" : "text-gray-700"
                         }`}
                       >
                         {task.description}
@@ -169,19 +194,24 @@ export default function SequentialChecklist({
                     )}
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  color={task.is_completed ? "danger" : "primary"}
-                  variant={task.is_completed ? "outline" : "solid"}
-                  onClick={() => handleToggleTask(task.id, idx)}
-                  disabled={
-                    isLoading ||
-                    (idx > 0 &&
-                      !tasks.slice(0, idx).every((t) => t.is_completed))
-                  }
-                >
-                  {task.is_completed ? "Undo" : "Complete"}
-                </Button>
+                <div className="flex items-center">
+                  {taskInProgress === task.id && (
+                    <div className="mr-2 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                  <Button
+                    size="sm"
+                    color={task.is_completed ? "danger" : "primary"}
+                    variant={task.is_completed ? "outline" : "solid"}
+                    onClick={() => handleToggleTask(task.id, idx)}
+                    disabled={
+                      taskInProgress !== null ||
+                      (idx > 0 &&
+                        !tasks.slice(0, idx).every((t) => t.is_completed))
+                    }
+                  >
+                    {task.is_completed ? "Undo" : "Complete"}
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>

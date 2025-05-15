@@ -8,6 +8,7 @@ const seedDatabase = () => {
   db.serialize(() => {
     db.run("DROP TABLE IF EXISTS tasks");
     db.run("DROP TABLE IF EXISTS checklists");
+    db.run("DROP TABLE IF EXISTS template_tasks");
     db.run("DROP TABLE IF EXISTS templates");
 
     // Create tables fresh
@@ -18,6 +19,19 @@ const seedDatabase = () => {
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE template_tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        template_id INTEGER,
+        title TEXT NOT NULL,
+        description TEXT,
+        position INTEGER,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (template_id) REFERENCES templates (id) ON DELETE CASCADE
       )
     `);
 
@@ -89,6 +103,124 @@ const seedDatabase = () => {
       rows.forEach((row) => {
         templateIds[row.name] = row.id;
       });
+
+      // Seed template tasks
+      const templateTasksMap = {
+        "Project Kickoff": [
+          {
+            title: "Create project repository",
+            description: "Setup Git repository for the project",
+            position: 0,
+          },
+          {
+            title: "Schedule kickoff meeting",
+            description: "Invite all stakeholders to the kickoff",
+            position: 1,
+          },
+          {
+            title: "Prepare project brief",
+            description: "Document project goals, timeline, and deliverables",
+            position: 2,
+          },
+          {
+            title: "Setup project management tools",
+            description: "Configure JIRA, Slack channels, etc.",
+            position: 3,
+          },
+        ],
+        "Deployment Checklist": [
+          {
+            title: "Initialize repository",
+            description: "Setup Git repository for deployment",
+            position: 0,
+          },
+          {
+            title: "Configure CI/CD pipeline",
+            description: "Set up continuous integration and deployment",
+            position: 1,
+          },
+          {
+            title: "Deploy to staging environment",
+            description: "Deploy application to the staging server",
+            position: 2,
+          },
+          {
+            title: "Run smoke tests",
+            description: "Verify basic functionality in staging",
+            position: 3,
+          },
+          {
+            title: "Deploy to production",
+            description: "Deploy to production environment",
+            position: 4,
+          },
+        ],
+        "Sprint Planning": [
+          {
+            title: "Review backlog",
+            description: "Go through backlog and prioritize items",
+            position: 0,
+          },
+          {
+            title: "Define sprint goal",
+            description: "Set clear objectives for the sprint",
+            position: 1,
+          },
+          {
+            title: "Estimate tasks",
+            description: "Estimate effort for each task",
+            position: 2,
+          },
+          {
+            title: "Assign resources",
+            description: "Assign team members to tasks",
+            position: 3,
+          },
+        ],
+        "Bug Report": [
+          {
+            title: "Reproduce the issue",
+            description: "Document steps to reproduce the bug",
+            position: 0,
+          },
+          {
+            title: "Capture logs/screenshots",
+            description: "Collect all relevant error information",
+            position: 1,
+          },
+          {
+            title: "Assign priority",
+            description: "Set bug priority based on impact",
+            position: 2,
+          },
+          {
+            title: "Create JIRA ticket",
+            description: "Document the bug in tracking system",
+            position: 3,
+          },
+        ],
+      };
+
+      // Insert template tasks
+      for (const [templateName, tasks] of Object.entries(templateTasksMap)) {
+        const templateId = templateIds[templateName];
+        if (templateId) {
+          const templateTaskStmt = db.prepare(
+            "INSERT INTO template_tasks (template_id, title, description, position) VALUES (?, ?, ?, ?)"
+          );
+
+          tasks.forEach((task) => {
+            templateTaskStmt.run([
+              templateId,
+              task.title,
+              task.description,
+              task.position,
+            ]);
+          });
+
+          templateTaskStmt.finalize();
+        }
+      }
 
       // Seed normal checklist
       db.run(

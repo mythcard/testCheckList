@@ -18,6 +18,11 @@ function App() {
     "checklists"
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [newChecklistName, setNewChecklistName] = useState("");
+  const [selectedChecklistType, setSelectedChecklistType] = useState<
+    "normal" | "sequential"
+  >("normal");
 
   const handleSelectChecklist = async (checklist: Checklist) => {
     try {
@@ -34,6 +39,7 @@ function App() {
 
   const handleSelectTemplate = (template: Template) => {
     setSelectedTemplate(template);
+    setShowTemplateModal(true);
   };
 
   const handleBackFromChecklist = () => {
@@ -42,12 +48,69 @@ function App() {
 
   const handleBackFromTemplate = () => {
     setSelectedTemplate(null);
+    setShowTemplateModal(false);
   };
 
   const handleToggleView = () => {
     setActiveView(activeView === "checklists" ? "templates" : "checklists");
     setSelectedChecklist(null);
     setSelectedTemplate(null);
+    setShowTemplateModal(false);
+  };
+
+  const handleCreateFromTemplate = async () => {
+    if (!selectedTemplate && !newChecklistName.trim()) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      let newChecklist;
+
+      if (selectedTemplate) {
+        // Create checklist from template
+        newChecklist = await apiClient.createChecklistFromTemplate(
+          selectedTemplate.id,
+          newChecklistName.trim(),
+          "user1", // Hardcoded for demo
+          selectedChecklistType
+        );
+      } else {
+        // Create empty checklist if no template
+        newChecklist = await apiClient.createChecklist({
+          name: newChecklistName.trim(),
+          description: "",
+          user_id: "user1", // Hardcoded for demo
+          type: selectedChecklistType,
+        });
+      }
+
+      // Close modal and show the new checklist
+      setShowTemplateModal(false);
+      setNewChecklistName("");
+      setSelectedTemplate(null);
+      setActiveView("checklists");
+
+      // Fetch the full checklist with tasks and select it
+      const fullChecklist = await apiClient.getChecklist(newChecklist.id);
+      setSelectedChecklist(fullChecklist);
+    } catch (error) {
+      console.error("Failed to create checklist:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChecklistNameChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setNewChecklistName(e.target.value);
+  };
+
+  const handleChecklistTypeChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    setSelectedChecklistType(e.target.value as "normal" | "sequential");
   };
 
   // Render the appropriate checklist component based on type
@@ -98,28 +161,10 @@ function App() {
           ) : (
             <ChecklistsList
               onSelectChecklist={handleSelectChecklist}
-              onCreateChecklist={() => {}}
+              onCreateChecklist={() => setActiveView("templates")}
               userId="user1" // Hardcoded for demo purposes
             />
           )
-        ) : selectedTemplate ? (
-          <div className="p-4 border rounded-lg">
-            <button
-              onClick={handleBackFromTemplate}
-              className="mb-4 text-blue-600 hover:underline"
-            >
-              ← Back to Templates
-            </button>
-            <h2 className="text-2xl font-bold mb-2">{selectedTemplate.name}</h2>
-            {selectedTemplate.description && (
-              <p className="text-gray-600 mb-4">
-                {selectedTemplate.description}
-              </p>
-            )}
-            <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
-              Create Checklist from Template
-            </button>
-          </div>
         ) : (
           <TemplatesList
             onSelectTemplate={handleSelectTemplate}
@@ -127,6 +172,73 @@ function App() {
           />
         )}
       </main>
+
+      {/* Template to Checklist Modal */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Create New Checklist</h2>
+
+            {selectedTemplate ? (
+              <p className="text-gray-600 mb-4">
+                Using template:{" "}
+                <span className="font-medium">{selectedTemplate.name}</span>
+              </p>
+            ) : (
+              <p className="text-gray-600 mb-4">
+                Creating a new empty checklist
+              </p>
+            )}
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Checklist Name
+              </label>
+              <input
+                type="text"
+                value={newChecklistName}
+                onChange={handleChecklistNameChange}
+                className="w-full p-2 border rounded-md"
+                placeholder="Enter checklist name"
+              />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Checklist Type
+              </label>
+              <select
+                className="w-full p-2 border rounded-md"
+                value={selectedChecklistType}
+                onChange={handleChecklistTypeChange}
+              >
+                <option value="normal">Normal</option>
+                <option value="sequential">Sequential (enforced order)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Sequential checklists enforce the order of task completion.
+              </p>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={handleBackFromTemplate}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateFromTemplate}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300"
+                disabled={isLoading || !newChecklistName.trim()}
+              >
+                {isLoading ? "Creating..." : "Create Checklist"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
