@@ -175,12 +175,12 @@ function App() {
         )}
       </main>
 
-      <footer className="py-4 border-t border-gray-200 absolute bottom-0 w-full">
+      {/* <footer className="py-4 border-t border-gray-200 absolute bottom-0 w-full">
         <div className="container mx-auto px-4 max-w-5xl text-center text-gray-500 text-sm">
           TaskMaster &copy; {new Date().getFullYear()} - Checklist Management
           App
         </div>
-      </footer>
+      </footer> */}
 
       {/* Template to Checklist Modal */}
       {showTemplateModal && (
